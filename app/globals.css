@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Discord-like palette: blurple + purple, with white/light backgrounds */
-  --primary-blue: #5865f2; /* discord blurple */
+  --primary-blue: #5865f2; 
   --primary-purple: #7b61ff;
   --surface: #ffffff;
   --muted: #f3f4f6;
@@ -17,7 +16,6 @@
   }
 }
 
-/* theme variables are provided via CSS custom properties above */
 
 body {
   background: linear-gradient(135deg, rgba(88,101,242,0.06), rgba(123,97,255,0.04));

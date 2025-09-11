@@ -24,9 +24,7 @@ export default function AuthForm({ mode }: Props) {
     setMessage(null);
 
     try {
-      // Simular autenticação (você pode substituir por API real depois)
       if (mode === "login") {
-        // Simular login
         const user: User = {
           id: Date.now().toString(),
           name: username || name || email.split('@')[0],
@@ -41,7 +39,6 @@ export default function AuthForm({ mode }: Props) {
           router.push('/servidor');
         }, 1000);
       } else {
-        // Simular registro
         const user: User = {
           id: Date.now().toString(),
           name: username || name,

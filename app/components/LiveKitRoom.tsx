@@ -39,8 +39,6 @@ export default function LiveKitRoom({ serverUrl, token, name, onParticipantsChan
               },
             });
             roomRef.current = room;
-            
-            // Notificar o componente pai sobre a instância da room
             if (onRoomInstance) {
               onRoomInstance(room);
             }
@@ -82,7 +80,6 @@ export default function LiveKitRoom({ serverUrl, token, name, onParticipantsChan
               }
             });
 
-            // Anexar tracks existentes dos participantes já conectados
             try {
               (room.participants as Map<string, RemoteParticipant>).forEach((participant) => {
                 const tracks = (participant as unknown as { tracks: Map<string, RemoteTrackPublication> }).tracks;
@@ -97,10 +94,8 @@ export default function LiveKitRoom({ serverUrl, token, name, onParticipantsChan
               console.warn("Error attaching existing participant tracks", e);
             }
 
-            // Obter lista inicial de participantes (incluindo o usuário local)
             const list: string[] = [];
             (room.participants as Map<string, RemoteParticipant>).forEach((p) => list.push(p.identity));
-            // Adicionar o usuário local à lista
             const allParticipants = name ? [name, ...list] : list;
             setRemoteParticipantsList(list);
             if (onParticipantsChange) onParticipantsChange(allParticipants);
@@ -151,7 +146,6 @@ export default function LiveKitRoom({ serverUrl, token, name, onParticipantsChan
           roomRef.current.disconnect();
         } catch {}
       }
-      // Limpar a instância da room quando o componente for desmontado
       if (onRoomInstance) {
         onRoomInstance(null);
       }

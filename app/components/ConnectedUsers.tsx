@@ -13,8 +13,6 @@ export default function ConnectedUsers({ participants, currentUser }: ConnectedU
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    // Simular dados dos usuários conectados
-    // Em uma implementação real, você buscaria os dados dos usuários por seus IDs
     const mockUsers = participants.map((identity, index) => ({
       id: `user-${index}`,
       name: identity,
@@ -26,8 +24,6 @@ export default function ConnectedUsers({ participants, currentUser }: ConnectedU
         </svg>
       `)}`
     }));
-
-    // Adicionar usuário atual se não estiver na lista
     if (currentUser && !participants.includes(currentUser.name)) {
       mockUsers.unshift({
         ...currentUser,
@@ -57,7 +53,6 @@ export default function ConnectedUsers({ participants, currentUser }: ConnectedU
         {users.map((user) => (
           <div key={user.id} className="flex items-center gap-3">
             <div className="relative">
-              {/* Avatar */}
               {user.avatar ? (
                 <Image 
                   src={user.avatar} 
@@ -72,7 +67,6 @@ export default function ConnectedUsers({ participants, currentUser }: ConnectedU
                 </div>
               )}
               
-              {/* Indicador de status online */}
               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-[#2c2f36]"></div>
             </div>
             
@@ -88,7 +82,6 @@ export default function ConnectedUsers({ participants, currentUser }: ConnectedU
               </div>
             </div>
             
-            {/* Indicadores de mídia */}
             <div className="flex gap-1">
               <div className="w-4 h-4 rounded bg-green-500/20 flex items-center justify-center">
                 <svg className="w-2.5 h-2.5 text-green-400" fill="currentColor" viewBox="0 0 24 24">
