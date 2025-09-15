@@ -51,7 +51,6 @@ export default function RoomPage() {
   const [participantVolumes, setParticipantVolumes] = useState<{[key: string]: number}>({});
   const [mutedParticipants, setMutedParticipants] = useState<{[key: string]: boolean}>({});
 
-  // Memoizar a função de setChatMessages para evitar re-renderizações
   const updateChatMessages = useCallback((updater: React.SetStateAction<ChatMessage[]>) => {
     setChatMessages(updater);
   }, []);
@@ -63,13 +62,11 @@ export default function RoomPage() {
     const userNameParam = searchParams.get('userName');
 
     if (tokenParam && urlParam && roomNameParam && userNameParam) {
-      // Acesso com parâmetros (método normal)
       setToken(tokenParam);
       setServerUrl(urlParam);
       setRoomName(roomNameParam);
       setUserName(userNameParam);
     } else {
-      // Acesso direto via link - mostrar modal para capturar nome
       setShowJoinModal(true);
     }
   }, [searchParams]);
@@ -131,10 +128,8 @@ export default function RoomPage() {
   };
 
   const handleDisconnected = (reason?: DisconnectReason) => {
-    console.log('Desconectado da sala:', reason);
     setIsConnected(false);
     
-    // Limpar mensagens do chat quando sair da sala
     setChatMessages([]);
     
     if (reason === DisconnectReason.ROOM_DELETED) {
@@ -342,32 +337,26 @@ export default function RoomPage() {
   );
 }
 
-// Componente para desligar câmera automaticamente
 function AutoDisableCamera() {
   const { localParticipant } = useLocalParticipant();
 
   useEffect(() => {
     if (localParticipant) {
-      // Desligar a câmera automaticamente quando conectar
       localParticipant.setCameraEnabled(false);
     }
   }, [localParticipant]);
 
-  return null; // Este componente não renderiza nada
+  return null;
 }
 
-// Componente para contar participantes
 function ParticipantCount() {
   const participants = useParticipants();
   return <span>{participants.length}</span>;
 }
-
-// Componente para controles customizados
 function CustomControls() {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const { localParticipant } = useLocalParticipant();
 
-  // Verificar se o participante local existe e obter estado dos dispositivos
   const isVideoEnabled = localParticipant?.isCameraEnabled ?? false;
   const isAudioEnabled = localParticipant?.isMicrophoneEnabled ?? false;
 
@@ -486,7 +475,6 @@ function ParticipantsPanel({
     setParticipantVolumes(prev => {
       const volume = Math.max(0, Math.min(2, newVolume));
       
-      // Aplicar o volume ao elemento de áudio do participante
       const audioElements = document.querySelectorAll(`audio[data-participant-id="${participantId}"]`);
       audioElements.forEach(audio => {
         if (audio instanceof HTMLAudioElement) {

@@ -5,12 +5,7 @@
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* Removed experimental @theme rule for broader compatibility */
 
 @media (prefers-color-scheme: dark) {
   :root {
@@ -24,3 +19,109 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Enhanced base styling */
+html, body {
+  min-height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: radial-gradient(circle at 20% 20%, #1e293b 0%, #0f172a 55%, #020617 100%);
+  font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(92deg, #38bdf8 0%, #6366f1 40%, #8b5cf6 70%, #d946ef 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* Animated pulse ring (for live indicators) */
+.pulse-ring {
+  position: relative;
+}
+.pulse-ring::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(59,130,246,0.35) 0%, rgba(59,130,246,0) 70%);
+  animation: pulse 2.4s ease-out infinite;
+  opacity: 0;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.85); opacity: 0.9; }
+  70% { transform: scale(1.5); opacity: 0; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+/* Floating animation */
+.float-slow { animation: float 8s ease-in-out infinite; }
+.float-medium { animation: float 5s ease-in-out infinite; }
+.float-fast { animation: float 3s ease-in-out infinite; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-14px); }
+}
+
+/* Fade-in */
+.fade-in { animation: fadeIn 0.8s ease forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Custom scrollbar (WebKit) */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: #0f172a; }
+::-webkit-scrollbar-thumb { background: linear-gradient(#334155, #475569); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: linear-gradient(#475569, #64748b); }
+
+/* Focus outline enhancement */
+:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Utility for subtle dividers */
+.divider-gradient {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(148,163,184,0.35) 50%, rgba(255,255,255,0) 100%);
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: transform .4s cubic-bezier(.34,1.56,.64,1), box-shadow .4s ease;
+}
+.card-hover:hover {
+  transform: translateY(-6px) scale(1.015);
+  box-shadow: 0 12px 40px -10px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset;
+}
+
+/* Responsive container width tweaks */
+@media (min-width: 1536px) {
+  .container { max-width: 1400px; }
+}
+
+/* Dark mode support - can be toggled by adding class 'dark' on <html> */
+.dark body {
+  background: radial-gradient(circle at 75% 20%, #1e293b 0%, #0f172a 55%, #020617 100%);
+  color: #f1f5f9;
+}
+
+.dark .glass { background: rgba(15,23,42,0.55); border-color: rgba(255,255,255,0.07); }
+.dark .gradient-text { filter: drop-shadow(0 2px 6px rgba(99,102,241,0.35)); }
+

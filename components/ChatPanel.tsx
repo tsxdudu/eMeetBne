@@ -39,26 +39,18 @@ export function ChatPanel({ onClose, messages, setMessages }: ChatPanelProps) {
 
     setIsConnected(true);
 
-    // Listener para mensagens recebidas
-    const handleDataReceived = (payload: Uint8Array, participant?: RemoteParticipant, kind?: unknown, topic?: string) => {
-      console.log('Data received:', { participant: participant?.identity, kind, topic, payloadSize: payload.length });
-      
+    const handleDataReceived = (payload: Uint8Array, participant?: RemoteParticipant) => {
       if (!participant) {
-        console.log('No participant found');
         return;
       }
       
       try {
         const decoder = new TextDecoder();
         const message = decoder.decode(payload);
-        console.log('Decoded message:', message);
         
         const data = JSON.parse(message);
-        console.log('Parsed data:', data);
 
         if (data.type === 'chat') {
-          console.log('Chat message received from:', participant.name || participant.identity);
-          
           const chatMessage: ChatMessage = {
             id: `${participant.identity}-${Date.now()}`,
             participantName: data.participantName || participant.name || participant.identity,
@@ -68,7 +60,6 @@ export function ChatPanel({ onClose, messages, setMessages }: ChatPanelProps) {
           };
           
           setMessages(prev => {
-            console.log('Adding message to list:', chatMessage);
             return [...prev, chatMessage];
           });
         }
@@ -77,11 +68,9 @@ export function ChatPanel({ onClose, messages, setMessages }: ChatPanelProps) {
       }
     };
 
-    console.log('Adding dataReceived listener');
     room.on('dataReceived', handleDataReceived);
 
     return () => {
-      console.log('Removing dataReceived listener');
       room.off('dataReceived', handleDataReceived);
     };
   }, [room, setMessages]);
@@ -90,7 +79,6 @@ export function ChatPanel({ onClose, messages, setMessages }: ChatPanelProps) {
     if (!newMessage.trim() || !room || !localParticipant) return;
 
     try {
-      console.log('Enviando mensagem:', newMessage.trim());
 
       // Enviar mensagem para outros participantes PRIMEIRO
       const messageData = {
@@ -99,17 +87,12 @@ export function ChatPanel({ onClose, messages, setMessages }: ChatPanelProps) {
         timestamp: new Date().toISOString(),
         participantName: localParticipant.name || localParticipant.identity
       };
-      
-      console.log('Dados da mensagem:', messageData);
 
       const encoder = new TextEncoder();
       const data = encoder.encode(JSON.stringify(messageData));
       
-      console.log('Publicando dados...');
       await localParticipant.publishData(data, { reliable: true });
-      console.log('Mensagem enviada com sucesso!');
 
-      // Adicionar mensagem local à lista DEPOIS de enviar
       const localMessage: ChatMessage = {
         id: `local-${Date.now()}`,
         participantName: localParticipant.name || localParticipant.identity,
@@ -141,7 +124,6 @@ export function ChatPanel({ onClose, messages, setMessages }: ChatPanelProps) {
 
   return (
     <div className="fixed top-0 right-0 h-full w-80 bg-gray-800 bg-opacity-95 z-50 flex flex-col">
-      {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-600">
         <h3 className="text-lg font-semibold text-white">Chat da Sala</h3>
         <button
@@ -152,7 +134,6 @@ export function ChatPanel({ onClose, messages, setMessages }: ChatPanelProps) {
         </button>
       </div>
 
-      {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {!isConnected && (
           <div className="text-center text-gray-400 text-sm">
@@ -201,7 +182,6 @@ export function ChatPanel({ onClose, messages, setMessages }: ChatPanelProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input */}
       <div className="p-4 border-t border-gray-600">
         <div className="flex space-x-2">
           <textarea
