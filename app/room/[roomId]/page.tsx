@@ -24,7 +24,10 @@ import {
   Users,
   Copy,
   Settings,
-  MessageSquare
+  MessageSquare,
+  VolumeX,
+  Volume1,
+  Volume2
 } from 'lucide-react';
 
 export default function RoomPage() {
@@ -45,6 +48,8 @@ export default function RoomPage() {
   const [joinPassword, setJoinPassword] = useState('');
   const [joining, setJoining] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [participantVolumes, setParticipantVolumes] = useState<{[key: string]: number}>({});
+  const [mutedParticipants, setMutedParticipants] = useState<{[key: string]: boolean}>({});
 
   // Memoizar a função de setChatMessages para evitar re-renderizações
   const updateChatMessages = useCallback((updater: React.SetStateAction<ChatMessage[]>) => {
@@ -290,7 +295,13 @@ export default function RoomPage() {
               
               {/* Participants Panel */}
               {showParticipants && (
-                <ParticipantsPanel onClose={() => setShowParticipants(false)} />
+                <ParticipantsPanel 
+                  onClose={() => setShowParticipants(false)}
+                  participantVolumes={participantVolumes}
+                  setParticipantVolumes={setParticipantVolumes}
+                  mutedParticipants={mutedParticipants}
+                  setMutedParticipants={setMutedParticipants}
+                />
               )}
 
               {/* Settings Panel */}
@@ -436,11 +447,116 @@ function CustomControls() {
 }
 
 // Componente do painel de participantes
-function ParticipantsPanel({ onClose }: { onClose: () => void }) {
+function ParticipantsPanel({ 
+  onClose,
+  participantVolumes,
+  setParticipantVolumes,
+  mutedParticipants,
+  setMutedParticipants
+}: { 
+  onClose: () => void;
+  participantVolumes: {[key: string]: number};
+  setParticipantVolumes: React.Dispatch<React.SetStateAction<{[key: string]: number}>>;
+  mutedParticipants: {[key: string]: boolean};
+  setMutedParticipants: React.Dispatch<React.SetStateAction<{[key: string]: boolean}>>;
+}) {
   const participants = useParticipants();
+  const [contextMenu, setContextMenu] = useState<{
+    show: boolean;
+    x: number;
+    y: number;
+    participantId: string;
+  }>({ show: false, x: 0, y: 0, participantId: '' });
+
+  const handleRightClick = (e: React.MouseEvent, participantId: string) => {
+    e.preventDefault();
+    setContextMenu({
+      show: true,
+      x: e.clientX,
+      y: e.clientY,
+      participantId
+    });
+  };
+
+  const closeContextMenu = () => {
+    setContextMenu({ show: false, x: 0, y: 0, participantId: '' });
+  };
+
+  const adjustVolume = (participantId: string, newVolume: number) => {
+    setParticipantVolumes(prev => {
+      const volume = Math.max(0, Math.min(2, newVolume));
+      
+      // Aplicar o volume ao elemento de áudio do participante
+      const audioElements = document.querySelectorAll(`audio[data-participant-id="${participantId}"]`);
+      audioElements.forEach(audio => {
+        if (audio instanceof HTMLAudioElement) {
+          audio.volume = volume;
+        }
+      });
+      
+      return { ...prev, [participantId]: volume };
+    });
+  };
+
+  const toggleMute = (participantId: string) => {
+    setMutedParticipants(prev => {
+      const isMuted = !prev[participantId];
+      
+      // Aplicar mute/unmute ao elemento de áudio do participante
+      const audioElements = document.querySelectorAll(`audio[data-participant-id="${participantId}"]`);
+      audioElements.forEach(audio => {
+        if (audio instanceof HTMLAudioElement) {
+          audio.muted = isMuted;
+        }
+      });
+      
+      return { ...prev, [participantId]: isMuted };
+    });
+    closeContextMenu();
+  };
+
+  // Fechar menu de contexto ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = () => closeContextMenu();
+    if (contextMenu.show) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenu.show]);
+
+  const getVolumeIcon = (participantId: string) => {
+    const volume = participantVolumes[participantId] || 1;
+    const isMuted = mutedParticipants[participantId];
+    
+    if (isMuted || volume === 0) return <VolumeX className="h-4 w-4 text-red-400" />;
+    if (volume < 0.5) return <Volume1 className="h-4 w-4 text-yellow-400" />;
+    return <Volume2 className="h-4 w-4 text-green-400" />;
+  };
 
   return (
-    <div className="fixed top-0 right-0 h-full w-80 bg-gray-800 bg-opacity-95 z-50 p-6">
+    <>
+      <style jsx>{`
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          border: 2px solid #1f2937;
+        }
+        
+        .slider::-moz-range-thumb {
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          border: 2px solid #1f2937;
+        }
+      `}</style>
+      
+      <div className="fixed top-0 right-0 h-full w-80 bg-gray-800 bg-opacity-95 z-50 p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold">Participantes ({participants.length})</h3>
         <button
@@ -455,7 +571,8 @@ function ParticipantsPanel({ onClose }: { onClose: () => void }) {
         {participants.map((participant) => (
           <div
             key={participant.identity}
-            className="flex items-center space-x-3 p-3 bg-gray-700 rounded-lg"
+            className="flex items-center space-x-3 p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors"
+            onContextMenu={(e) => handleRightClick(e, participant.identity)}
           >
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
               <span className="text-sm font-semibold">
@@ -479,11 +596,63 @@ function ParticipantsPanel({ onClose }: { onClose: () => void }) {
               ) : (
                 <VideoOff className="h-4 w-4 text-red-400" />
               )}
+              {!participant.isLocal && getVolumeIcon(participant.identity)}
             </div>
           </div>
         ))}
       </div>
+
+      {/* Context Menu */}
+      {contextMenu.show && (
+        <div
+          className="fixed bg-gray-700 border border-gray-600 rounded-lg shadow-lg p-4 z-60"
+          style={{ 
+            left: contextMenu.x, 
+            top: contextMenu.y,
+            minWidth: '200px'
+          }}
+        >
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Volume</span>
+              <span className="text-xs text-gray-400">
+                {Math.round((participantVolumes[contextMenu.participantId] || 1) * 100)}%
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="2"
+              step="0.1"
+              value={participantVolumes[contextMenu.participantId] || 1}
+              onChange={(e) => adjustVolume(contextMenu.participantId, parseFloat(e.target.value))}
+              className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((participantVolumes[contextMenu.participantId] || 1) / 2) * 100}%, #4b5563 ${((participantVolumes[contextMenu.participantId] || 1) / 2) * 100}%, #4b5563 100%)`
+              }}
+            />
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>0%</span>
+              <span>100%</span>
+              <span>200%</span>
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-600 pt-2">
+            <button
+              onClick={() => toggleMute(contextMenu.participantId)}
+              className="w-full text-left px-2 py-2 hover:bg-gray-600 rounded flex items-center space-x-2"
+            >
+              <VolumeX className="h-4 w-4" />
+              <span>
+                {mutedParticipants[contextMenu.participantId] ? 'Desmutar' : 'Mutar'}
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
+    </>
   );
 }
 
