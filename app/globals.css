@@ -125,3 +125,45 @@ body {
 .dark .glass { background: rgba(15,23,42,0.55); border-color: rgba(255,255,255,0.07); }
 .dark .gradient-text { filter: drop-shadow(0 2px 6px rgba(99,102,241,0.35)); }
 
+/* Video quality optimization styles */
+.livekit-video-fullscreen video,
+.livekit-video-grid video {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  image-rendering: optimizeQuality;
+  object-fit: contain;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.livekit-video-fullscreen video {
+  /* Force hardware acceleration for fullscreen */
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+.livekit-video-grid video {
+  /* Optimize for grid view performance */
+  will-change: auto;
+}
+
+/* Ensure videos maintain quality during transitions */
+.livekit-video-fullscreen,
+.livekit-video-grid {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  backface-visibility: hidden;
+}
+
+/* Override any blur effects that might reduce quality */
+.livekit-video-fullscreen *,
+.livekit-video-grid * {
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
+}
+

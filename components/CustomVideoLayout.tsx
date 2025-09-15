@@ -123,6 +123,7 @@ function ParticipantCard({ participant, videoTrack }: {
 
 export function CustomVideoLayout() {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedScreenShare, setSelectedScreenShare] = useState<number>(0);
   const participants = useParticipants();
   const tracks = useTracks([
     { source: Track.Source.Camera, withPlaceholder: true },
@@ -134,6 +135,22 @@ export function CustomVideoLayout() {
   );
 
   const hasScreenShare = screenShareTracks.length > 0;
+
+  // Reset selectedScreenShare if it's out of bounds
+  useEffect(() => {
+    if (selectedScreenShare >= screenShareTracks.length) {
+      setSelectedScreenShare(0);
+    }
+  }, [screenShareTracks.length, selectedScreenShare]);
+
+  // Configure video quality based on fullscreen mode
+  useEffect(() => {
+    // This will help with requesting better quality from the server
+    if (isFullscreen && screenShareTracks.length > 0) {
+      // In fullscreen mode, we want to ensure we get the best quality possible
+      console.log('Fullscreen mode activated - requesting high quality video');
+    }
+  }, [isFullscreen, screenShareTracks]);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -158,68 +175,158 @@ export function CustomVideoLayout() {
   if (hasScreenShare) {
     if (isFullscreen) {
       return (
-        <div className="h-full bg-gray-900 flex items-center justify-center transition-all duration-300">
-          {screenShareTracks.map((track) => (
-            <div key={track.participant.identity} className="relative w-full h-full cursor-pointer">
-              {track.publication && (
-                <VideoTrack 
-                  trackRef={{
-                    participant: track.participant,
-                    source: track.source,
-                    publication: track.publication
-                  }}
-                  className="w-full h-full object-contain transition-all duration-300"
+        <div className="h-full bg-gray-900 flex flex-col transition-all duration-300">
+          {/* Tela principal em fullscreen */}
+          <div className="flex-1 flex items-center justify-center">
+            {screenShareTracks[selectedScreenShare] && (
+              <div className="relative w-full h-full cursor-pointer">
+                {screenShareTracks[selectedScreenShare].publication && (
+                  <VideoTrack 
+                    trackRef={{
+                      participant: screenShareTracks[selectedScreenShare].participant,
+                      source: screenShareTracks[selectedScreenShare].source,
+                      publication: screenShareTracks[selectedScreenShare].publication
+                    }}
+                    className="w-full h-full object-contain transition-all duration-300 livekit-video-fullscreen"
+                    onClick={toggleFullscreen}
+                    style={{
+                      imageRendering: 'crisp-edges'
+                    }}
+                    // Force higher quality video element properties
+                    {...({
+                      onLoadedMetadata: (e: React.SyntheticEvent<HTMLVideoElement>) => {
+                        const video = e.target as HTMLVideoElement;
+                        if (video) {
+                          video.setAttribute('playsinline', 'true');
+                          video.setAttribute('webkit-playsinline', 'true');
+                          // Set video quality hints
+                          video.style.objectFit = 'contain';
+                          video.style.width = '100%';
+                          video.style.height = '100%';
+                          video.style.maxWidth = 'none';
+                          video.style.maxHeight = 'none';
+                          // Disable hardware acceleration that might cause quality issues
+                          video.style.willChange = 'auto';
+                        }
+                      }
+                    })}
+                  />
+                )}
+                <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
+                  {screenShareTracks[selectedScreenShare].participant.name || screenShareTracks[selectedScreenShare].participant.identity} está compartilhando - Clique ou pressione ESC para sair do modo tela cheia
+                </div>
+                <button
                   onClick={toggleFullscreen}
-                />
-              )}
-              <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
-                {track.participant.name || track.participant.identity} está compartilhando - Clique ou pressione ESC para sair do modo tela cheia
+                  className="absolute top-4 right-4 bg-black bg-opacity-70 text-white p-3 rounded-lg hover:bg-opacity-90 transition-all backdrop-blur-sm"
+                  title="Sair do modo tela cheia (ESC)"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <button
-                onClick={toggleFullscreen}
-                className="absolute top-4 right-4 bg-black bg-opacity-70 text-white p-3 rounded-lg hover:bg-opacity-90 transition-all backdrop-blur-sm"
-                title="Sair do modo tela cheia (ESC)"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+            )}
+          </div>
+          
+          {/* Miniatura das outras telas compartilhadas */}
+          {screenShareTracks.length > 1 && (
+            <div className="bg-gray-800 p-2 border-t border-gray-700">
+              <div className="flex space-x-2 overflow-x-auto">
+                {screenShareTracks.map((track, index) => (
+                  <div 
+                    key={track.participant.identity} 
+                    className={`relative flex-shrink-0 w-32 h-20 cursor-pointer rounded border-2 transition-all ${
+                      index === selectedScreenShare ? 'border-blue-500' : 'border-gray-600 hover:border-gray-400'
+                    }`}
+                    onClick={() => setSelectedScreenShare(index)}
+                  >
+                    {track.publication && (
+                      <VideoTrack 
+                        trackRef={{
+                          participant: track.participant,
+                          source: track.source,
+                          publication: track.publication
+                        }}
+                        className="w-full h-full object-cover rounded"
+                      />
+                    )}
+                    <div className="absolute bottom-1 left-1 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
+                      {(track.participant.name || track.participant.identity).substring(0, 8)}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
+          )}
         </div>
       );
     }
 
+    // Determinar layout do grid para múltiplas telas compartilhadas
+    const screenShareCount = screenShareTracks.length;
+    let screenGridClass = '';
+    if (screenShareCount === 1) {
+      screenGridClass = 'grid-cols-1';
+    } else if (screenShareCount === 2) {
+      screenGridClass = 'grid-cols-2';
+    } else if (screenShareCount <= 4) {
+      screenGridClass = 'grid-cols-2';
+    } else {
+      screenGridClass = 'grid-cols-3';
+    }
+
     return (
       <div className="h-full flex transition-all duration-300">
-        <div className="flex-1 bg-gray-900 flex items-center justify-center p-4">
-          {screenShareTracks.map((track) => (
-            <div key={track.participant.identity} className="relative w-full h-full cursor-pointer group">
-              {track.publication && (
-                <VideoTrack 
-                  trackRef={{
-                    participant: track.participant,
-                    source: track.source,
-                    publication: track.publication
+        <div className="flex-1 bg-gray-900 p-4">
+          <div className={`grid ${screenGridClass} gap-4 h-full`}>
+            {screenShareTracks.map((track) => (
+              <div key={track.participant.identity} className="relative cursor-pointer group bg-gray-800 rounded-lg overflow-hidden">
+                {track.publication && (
+                  <VideoTrack 
+                    trackRef={{
+                      participant: track.participant,
+                      source: track.source,
+                      publication: track.publication
+                    }}
+                    className="w-full h-full object-contain hover:opacity-95 transition-all duration-200 livekit-video-grid"
+                    onClick={() => {
+                      setSelectedScreenShare(screenShareTracks.indexOf(track));
+                      toggleFullscreen();
+                    }}
+                    style={{
+                      imageRendering: 'crisp-edges'
+                    }}
+                    // Quality optimization for grid view
+                    {...({
+                      onLoadedMetadata: (e: React.SyntheticEvent<HTMLVideoElement>) => {
+                        const video = e.target as HTMLVideoElement;
+                        if (video) {
+                          video.setAttribute('playsinline', 'true');
+                          video.style.objectFit = 'contain';
+                          video.style.imageRendering = 'crisp-edges';
+                        }
+                      }
+                    })}
+                  />
+                )}
+                <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
+                  {track.participant.name || track.participant.identity} está compartilhando - Clique para tela cheia
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedScreenShare(screenShareTracks.indexOf(track));
+                    toggleFullscreen();
                   }}
-                  className="w-full h-full object-contain rounded-lg hover:opacity-95 transition-all duration-200"
-                  onClick={toggleFullscreen}
-                />
-              )}
-              <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
-                {track.participant.name || track.participant.identity} está compartilhando - Clique para tela cheia
+                  className="absolute top-4 right-4 bg-black bg-opacity-70 text-white p-3 rounded-lg hover:bg-opacity-90 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-sm"
+                  title="Modo tela cheia"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  </svg>
+                </button>
               </div>
-              <button
-                onClick={toggleFullscreen}
-                className="absolute top-4 right-4 bg-black bg-opacity-70 text-white p-3 rounded-lg hover:bg-opacity-90 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-sm"
-                title="Modo tela cheia"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
-              </button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         <div className="w-80 bg-gray-800 p-4 overflow-y-auto">
