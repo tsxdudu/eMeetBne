@@ -5,7 +5,7 @@ import { useLocalParticipant, useRoomContext } from '@livekit/components-react';
 import { Send, X } from 'lucide-react';
 import { RemoteParticipant } from 'livekit-client';
 
-interface ChatMessage {
+export interface ChatMessage {
   id: string;
   participantName: string;
   message: string;
@@ -15,10 +15,11 @@ interface ChatMessage {
 
 interface ChatPanelProps {
   onClose: () => void;
+  messages: ChatMessage[];
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
 }
 
-export function ChatPanel({ onClose }: ChatPanelProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export function ChatPanel({ onClose, messages, setMessages }: ChatPanelProps) {
   const [newMessage, setNewMessage] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -83,7 +84,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
       console.log('Removing dataReceived listener');
       room.off('dataReceived', handleDataReceived);
     };
-  }, [room]);
+  }, [room, setMessages]);
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !room || !localParticipant) return;

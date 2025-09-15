@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { 
   useParticipants, 
   useTracks,
@@ -9,6 +10,7 @@ import {
 import { Track } from 'livekit-client';
 
 export function CustomVideoLayout() {
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const participants = useParticipants();
   const tracks = useTracks([
     { source: Track.Source.Camera, withPlaceholder: true },
@@ -22,14 +24,35 @@ export function CustomVideoLayout() {
 
   const hasScreenShare = screenShareTracks.length > 0;
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  // Adicionar suporte para tecla ESC para sair do fullscreen
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    if (isFullscreen) {
+      document.addEventListener('keydown', handleKeyPress);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [isFullscreen]);
+
   if (hasScreenShare) {
     // Layout com compartilhamento de tela
-    return (
-      <div className="h-full flex">
-        {/* Área principal - Tela compartilhada */}
-        <div className="flex-1 bg-gray-900 flex items-center justify-center p-4">
+    if (isFullscreen) {
+      // Modo fullscreen - apenas a tela compartilhada
+      return (
+        <div className="h-full bg-gray-900 flex items-center justify-center transition-all duration-300">
           {screenShareTracks.map((track) => (
-            <div key={track.participant.identity} className="relative w-full h-full">
+            <div key={track.participant.identity} className="relative w-full h-full cursor-pointer">
               {track.publication && (
                 <VideoTrack 
                   trackRef={{
@@ -37,12 +60,60 @@ export function CustomVideoLayout() {
                     source: track.source,
                     publication: track.publication
                   }}
-                  className="w-full h-full object-contain rounded-lg"
+                  className="w-full h-full object-contain transition-all duration-300"
+                  onClick={toggleFullscreen}
                 />
               )}
-              <div className="absolute bottom-4 left-4 bg-black bg-opacity-60 text-white px-3 py-1 rounded-lg text-sm">
-                {track.participant.name || track.participant.identity} está compartilhando
+              <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
+                {track.participant.name || track.participant.identity} está compartilhando - Clique ou pressione ESC para sair do modo tela cheia
               </div>
+              {/* Botão de sair do fullscreen */}
+              <button
+                onClick={toggleFullscreen}
+                className="absolute top-4 right-4 bg-black bg-opacity-70 text-white p-3 rounded-lg hover:bg-opacity-90 transition-all backdrop-blur-sm"
+                title="Sair do modo tela cheia (ESC)"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Layout normal com compartilhamento de tela
+    return (
+      <div className="h-full flex transition-all duration-300">
+        {/* Área principal - Tela compartilhada */}
+        <div className="flex-1 bg-gray-900 flex items-center justify-center p-4">
+          {screenShareTracks.map((track) => (
+            <div key={track.participant.identity} className="relative w-full h-full cursor-pointer group">
+              {track.publication && (
+                <VideoTrack 
+                  trackRef={{
+                    participant: track.participant,
+                    source: track.source,
+                    publication: track.publication
+                  }}
+                  className="w-full h-full object-contain rounded-lg hover:opacity-95 transition-all duration-200"
+                  onClick={toggleFullscreen}
+                />
+              )}
+              <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
+                {track.participant.name || track.participant.identity} está compartilhando - Clique para tela cheia
+              </div>
+              {/* Botão de fullscreen */}
+              <button
+                onClick={toggleFullscreen}
+                className="absolute top-4 right-4 bg-black bg-opacity-70 text-white p-3 rounded-lg hover:bg-opacity-90 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-sm"
+                title="Modo tela cheia"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+              </button>
             </div>
           ))}
         </div>

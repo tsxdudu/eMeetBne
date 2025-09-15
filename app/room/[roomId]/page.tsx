@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { 
   LiveKitRoom, 
   RoomAudioRenderer,
@@ -12,7 +12,7 @@ import {
   DisconnectReason
 } from 'livekit-client';
 import { CustomVideoLayout } from '../../../components/CustomVideoLayout';
-import { ChatPanel } from '../../../components/ChatPanel';
+import { ChatPanel, ChatMessage } from '../../../components/ChatPanel';
 import { 
   Mic, 
   MicOff, 
@@ -44,6 +44,12 @@ export default function RoomPage() {
   const [joinUserName, setJoinUserName] = useState('');
   const [joinPassword, setJoinPassword] = useState('');
   const [joining, setJoining] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
+  // Memoizar a função de setChatMessages para evitar re-renderizações
+  const updateChatMessages = useCallback((updater: React.SetStateAction<ChatMessage[]>) => {
+    setChatMessages(updater);
+  }, []);
 
   useEffect(() => {
     const tokenParam = searchParams.get('token');
@@ -107,12 +113,14 @@ export default function RoomPage() {
   };
 
   const handleLeaveRoom = () => {
+    // Limpar mensagens do chat ao sair da sala manualmente
+    setChatMessages([]);
     router.push('/');
   };
 
   const copyRoomLink = () => {
     const roomId = params.roomId as string;
-    const link = `${window.location.origin}/${roomId}`;
+    const link = `${window.location.origin}/room/${roomId}`;
     navigator.clipboard.writeText(link);
     alert('Link da sala copiado!');
   };
@@ -120,6 +128,9 @@ export default function RoomPage() {
   const handleDisconnected = (reason?: DisconnectReason) => {
     console.log('Desconectado da sala:', reason);
     setIsConnected(false);
+    
+    // Limpar mensagens do chat quando sair da sala
+    setChatMessages([]);
     
     if (reason === DisconnectReason.ROOM_DELETED) {
       alert('A sala foi encerrada pelo criador');
@@ -289,7 +300,11 @@ export default function RoomPage() {
 
               {/* Chat Panel */}
               {showChat && (
-                <ChatPanel onClose={() => setShowChat(false)} />
+                <ChatPanel 
+                  onClose={() => setShowChat(false)} 
+                  messages={chatMessages}
+                  setMessages={updateChatMessages}
+                />
               )}
             </>
           ) : (
@@ -382,36 +397,39 @@ function CustomControls() {
 
   return (
     <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-      <div className="flex items-center space-x-4 bg-gray-800 bg-opacity-90 px-6 py-3 rounded-full">
-        <button
-          onClick={toggleAudio}
-          className={`p-3 rounded-full transition-colors ${
-            isAudioEnabled ? 'bg-gray-600 hover:bg-gray-700' : 'bg-red-600 hover:bg-red-700'
-          }`}
-          title={isAudioEnabled ? 'Desativar microfone' : 'Ativar microfone'}
-        >
-          {isAudioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-        </button>
+      {/* Área de hover ampliada para facilitar a interação */}
+      <div className="group px-8 py-8 -mx-8 -my-8">
+        <div className="flex items-center space-x-4 bg-gray-800 bg-opacity-90 px-6 py-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-500 ease-in-out transform group-hover:scale-105 backdrop-blur-sm">
+          <button
+            onClick={toggleAudio}
+            className={`p-3 rounded-full transition-colors ${
+              isAudioEnabled ? 'bg-gray-600 hover:bg-gray-700' : 'bg-red-600 hover:bg-red-700'
+            }`}
+            title={isAudioEnabled ? 'Desativar microfone' : 'Ativar microfone'}
+          >
+            {isAudioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+          </button>
 
-        <button
-          onClick={toggleVideo}
-          className={`p-3 rounded-full transition-colors ${
-            isVideoEnabled ? 'bg-gray-600 hover:bg-gray-700' : 'bg-red-600 hover:bg-red-700'
-          }`}
-          title={isVideoEnabled ? 'Desativar câmera' : 'Ativar câmera'}
-        >
-          {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
-        </button>
+          <button
+            onClick={toggleVideo}
+            className={`p-3 rounded-full transition-colors ${
+              isVideoEnabled ? 'bg-gray-600 hover:bg-gray-700' : 'bg-red-600 hover:bg-red-700'
+            }`}
+            title={isVideoEnabled ? 'Desativar câmera' : 'Ativar câmera'}
+          >
+            {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+          </button>
 
-        <button
-          onClick={toggleScreenShare}
-          className={`p-3 rounded-full transition-colors ${
-            isScreenSharing ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'
-          }`}
-          title={isScreenSharing ? 'Parar compartilhamento' : 'Compartilhar tela'}
-        >
-          {isScreenSharing ? <MonitorOff className="h-5 w-5" /> : <Monitor className="h-5 w-5" />}
-        </button>
+          <button
+            onClick={toggleScreenShare}
+            className={`p-3 rounded-full transition-colors ${
+              isScreenSharing ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'
+            }`}
+            title={isScreenSharing ? 'Parar compartilhamento' : 'Compartilhar tela'}
+          >
+            {isScreenSharing ? <MonitorOff className="h-5 w-5" /> : <Monitor className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
     </div>
   );
