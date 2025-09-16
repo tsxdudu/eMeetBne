@@ -165,18 +165,23 @@ export function CustomVideoLayout() {
 
     if (isFullscreen) {
       document.addEventListener('keydown', handleKeyPress);
+      // Ocultar overflow do body quando em modo fullscreen
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Restaurar overflow quando sair do modo fullscreen
+      document.body.style.overflow = 'auto';
     }
 
     return () => {
       document.removeEventListener('keydown', handleKeyPress);
+      document.body.style.overflow = 'auto';
     };
   }, [isFullscreen]);
 
   if (hasScreenShare) {
     if (isFullscreen) {
       return (
-        <div className="h-full bg-gray-900 flex flex-col transition-all duration-300">
-          {/* Tela principal em fullscreen */}
+        <div className="fixed inset-0 z-50 bg-gray-900 flex flex-col transition-all duration-300 w-screen h-screen">
           <div className="flex-1 flex items-center justify-center">
             {screenShareTracks[selectedScreenShare] && (
               <div className="relative w-full h-full cursor-pointer">
@@ -261,8 +266,6 @@ export function CustomVideoLayout() {
         </div>
       );
     }
-
-    // Determinar layout do grid para múltiplas telas compartilhadas
     const screenShareCount = screenShareTracks.length;
     let screenGridClass = '';
     if (screenShareCount === 1) {
