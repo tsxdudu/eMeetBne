@@ -1,7 +1,7 @@
 import { Room, CreateRoomRequest } from '@/types/room';
 import { v4 as uuidv4 } from 'uuid';
 
-// Armazenamento em memória das salas (em produção, use um banco de dados)
+
 const rooms = new Map<string, Room>();
 
 export class RoomManager {

@@ -41,9 +41,9 @@ export default function Home() {
     fetchPublicRooms();
   }, []);
 
-  // auto-refresh public rooms every 15s while forms closed
+
   useEffect(() => {
-    if (showCreateForm || showJoinForm) return; // don't poll when creating/joining manually
+    if (showCreateForm || showJoinForm) return; 
     const interval = setInterval(() => {
       fetchPublicRooms();
     }, 15000);

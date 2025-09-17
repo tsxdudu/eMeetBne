@@ -23,7 +23,7 @@ export function useRoomState(room: Room | undefined): UseRoomStateReturn {
       setIsConnected(true);
       setIsReconnecting(false);
       setError(null);
-      setParticipantCount(room.numParticipants); // Total participants including local
+      setParticipantCount(room.numParticipants); 
     };
 
     const handleDisconnected = (reason?: DisconnectReason) => {
@@ -39,7 +39,7 @@ export function useRoomState(room: Room | undefined): UseRoomStateReturn {
             setError('Você foi removido da sala');
             break;
           case DisconnectReason.CLIENT_INITIATED:
-            setError(null); // User left intentionally
+            setError(null); 
             break;
           default:
             setError('Conexão perdida');
@@ -66,7 +66,7 @@ export function useRoomState(room: Room | undefined): UseRoomStateReturn {
       setParticipantCount(room.numParticipants);
     };
 
-    // Add event listeners
+
     room.on(RoomEvent.Connected, handleConnected);
     room.on(RoomEvent.Disconnected, handleDisconnected);
     room.on(RoomEvent.Reconnecting, handleReconnecting);
@@ -74,7 +74,6 @@ export function useRoomState(room: Room | undefined): UseRoomStateReturn {
     room.on(RoomEvent.ParticipantConnected, handleParticipantConnected);
     room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
 
-    // Initial state
     if (room.state === 'connected') {
       handleConnected();
     }

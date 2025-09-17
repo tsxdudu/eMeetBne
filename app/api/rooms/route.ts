@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     const body: CreateRoomRequest = await request.json();
 
-    // Validação básica
+
     if (!body.name || body.name.trim().length === 0) {
       return NextResponse.json(
         { error: 'Nome da sala é obrigatório' },
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar se já existe uma sala com o mesmo nome
+
     const existingRoom = RoomManager.getRoomByName(body.name);
     if (existingRoom) {
       return NextResponse.json(
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validar senha para salas privadas
+
     if (!body.isPublic && (!body.password || body.password.trim().length === 0)) {
       return NextResponse.json(
         { error: 'Senha é obrigatória para salas privadas' },
@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validar maxParticipants
     if (body.maxParticipants !== undefined) {
       if (typeof body.maxParticipants !== 'number' || body.maxParticipants < 1 || body.maxParticipants > 50) {
         return NextResponse.json(
@@ -43,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     const room = RoomManager.createRoom(body);
 
-    // Não retornar a senha na resposta
+
     const roomResponse = {
       id: room.id,
       name: room.name,
@@ -66,8 +65,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const publicRooms = RoomManager.getPublicRooms();
-    
-    // Remover senhas das respostas
+
     const roomsResponse = publicRooms.map(room => ({
       id: room.id,
       name: room.name,

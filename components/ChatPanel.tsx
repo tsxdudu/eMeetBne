@@ -80,7 +80,7 @@ export function ChatPanel({ onClose, messages, setMessages }: ChatPanelProps) {
 
     try {
 
-      // Enviar mensagem para outros participantes PRIMEIRO
+  
       const messageData = {
         type: 'chat',
         message: newMessage.trim(),

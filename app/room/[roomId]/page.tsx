@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { 
   LiveKitRoom, 
   RoomAudioRenderer,
@@ -9,7 +9,8 @@ import {
   useLocalParticipant
 } from '@livekit/components-react';
 import {
-  DisconnectReason
+  DisconnectReason,
+  Track
 } from 'livekit-client';
 import { CustomVideoLayout } from '../../../components/CustomVideoLayout';
 import { ChatPanel, ChatMessage } from '../../../components/ChatPanel';
@@ -115,7 +116,7 @@ export default function RoomPage() {
   };
 
   const handleLeaveRoom = () => {
-    // Limpar mensagens do chat ao sair da sala manualmente
+
     setChatMessages([]);
     router.push('/');
   };
@@ -282,13 +283,13 @@ export default function RoomPage() {
           </div>
         </div>
 
-        {/* Main Content */}
+
         <div className="h-full pt-16">
           {isConnected ? (
             <>
               <CustomVideoLayout />
               
-              {/* Participants Panel */}
+
               {showParticipants && (
                 <ParticipantsPanel 
                   onClose={() => setShowParticipants(false)}
@@ -299,12 +300,12 @@ export default function RoomPage() {
                 />
               )}
 
-              {/* Settings Panel */}
+
               {showSettings && (
                 <SettingsPanel onClose={() => setShowSettings(false)} />
               )}
 
-              {/* Chat Panel */}
+
               {showChat && (
                 <ChatPanel 
                   onClose={() => setShowChat(false)} 
@@ -324,13 +325,13 @@ export default function RoomPage() {
           )}
         </div>
 
-        {/* Audio Renderer */}
+
         <RoomAudioRenderer />
         
-        {/* Auto disable camera on connect */}
+
         {isConnected && <AutoDisableCamera />}
         
-        {/* Custom Controls (if needed) */}
+
         {isConnected && <CustomControls />}
       </LiveKitRoom>
     </div>
@@ -355,6 +356,8 @@ function ParticipantCount() {
 }
 function CustomControls() {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const screenTrackRef = useRef<MediaStreamTrack | null>(null);
+  const screenPublicationRef = useRef<import('livekit-client').LocalTrackPublication | null>(null);
   const { localParticipant } = useLocalParticipant();
 
   const isVideoEnabled = localParticipant?.isCameraEnabled ?? false;
@@ -381,23 +384,73 @@ function CustomControls() {
   };
 
   const toggleScreenShare = async () => {
-    if (localParticipant) {
-      try {
-        if (isScreenSharing) {
-          await localParticipant.setScreenShareEnabled(false);
-        } else {
-          await localParticipant.setScreenShareEnabled(true);
+    if (!localParticipant) return;
+
+    try {
+      if (isScreenSharing) {
+        // stop and unpublish
+        if (screenTrackRef.current) {
+          try {
+            await localParticipant.unpublishTrack(screenTrackRef.current);
+          } catch {
+            // ignore
+          }
         }
-        setIsScreenSharing(!isScreenSharing);
-      } catch (error) {
-        console.error('Erro ao alternar compartilhamento de tela:', error);
+        if (screenTrackRef.current) {
+          try { screenTrackRef.current.stop(); } catch {
+            // ignore
+          }
+          screenTrackRef.current = null;
+        }
+        setIsScreenSharing(false);
+        return;
       }
+
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          frameRate: { ideal: 30, max: 60 },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
+        audio: false
+      });
+
+      const track = stream.getVideoTracks()[0];
+      if (!track) throw new Error('No screen track available');
+
+      const publication = await localParticipant.publishTrack(track, {
+        name: 'screen',
+        simulcast: true,
+        source: Track?.Source?.ScreenShare,
+        encodings: [
+          { maxBitrate: 2_500_000 },
+          { maxBitrate: 700_000 }, 
+          { maxBitrate: 200_000 }, 
+        ],
+      } as import('livekit-client').TrackPublishOptions);
+
+      screenTrackRef.current = track;
+      screenPublicationRef.current = publication;
+      setIsScreenSharing(true);
+      track.addEventListener('ended', async () => {
+        try {
+          if (screenTrackRef.current) {
+            await localParticipant.unpublishTrack(screenTrackRef.current);
+          }
+        } catch {
+
+        }
+        screenTrackRef.current = null;
+        setIsScreenSharing(false);
+      });
+
+    } catch (error) {
+      console.error('Erro ao alternar compartilhamento de tela:', error);
     }
   };
 
   return (
     <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-      {/* Área de hover ampliada para facilitar a interação */}
       <div className="group px-8 py-8 -mx-8 -my-8">
         <div className="flex items-center space-x-4 bg-gray-800 bg-opacity-90 px-6 py-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-500 ease-in-out transform group-hover:scale-105 backdrop-blur-sm">
           <button
@@ -435,7 +488,7 @@ function CustomControls() {
   );
 }
 
-// Componente do painel de participantes
+
 function ParticipantsPanel({ 
   onClose,
   participantVolumes,
@@ -490,7 +543,7 @@ function ParticipantsPanel({
     setMutedParticipants(prev => {
       const isMuted = !prev[participantId];
       
-      // Aplicar mute/unmute ao elemento de áudio do participante
+
       const audioElements = document.querySelectorAll(`audio[data-participant-id="${participantId}"]`);
       audioElements.forEach(audio => {
         if (audio instanceof HTMLAudioElement) {
@@ -503,7 +556,7 @@ function ParticipantsPanel({
     closeContextMenu();
   };
 
-  // Fechar menu de contexto ao clicar fora
+  
   useEffect(() => {
     const handleClickOutside = () => closeContextMenu();
     if (contextMenu.show) {
@@ -644,7 +697,7 @@ function ParticipantsPanel({
   );
 }
 
-// Componente do painel de configurações
+
 function SettingsPanel({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed top-0 right-0 h-full w-80 bg-gray-800 bg-opacity-95 z-50 p-6">

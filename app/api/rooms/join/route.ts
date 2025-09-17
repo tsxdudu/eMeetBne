@@ -7,7 +7,6 @@ export async function POST(request: NextRequest) {
   try {
     const body: JoinRoomRequest = await request.json();
 
-    // Validação básica
     if (!body.roomId || !body.userName) {
       return NextResponse.json(
         { error: 'ID da sala e nome do usuário são obrigatórios' },
@@ -15,7 +14,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar se a sala existe
     const room = RoomManager.getRoom(body.roomId);
     if (!room) {
       return NextResponse.json(
@@ -24,7 +22,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar limite de participantes
     if (room.participantCount >= room.maxParticipants) {
       return NextResponse.json(
         { error: 'Sala lotada' },
@@ -32,7 +29,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validar acesso à sala
     if (!RoomManager.validateRoomAccess(body.roomId, body.password)) {
       return NextResponse.json(
         { error: 'Senha incorreta ou acesso negado' },
@@ -40,7 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Gerar token do LiveKit
+
     const token = await createLiveKitToken(room.id, body.userName);
 
     const response: LiveKitTokenResponse = {

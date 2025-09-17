@@ -16,7 +16,7 @@ export async function GET(
       );
     }
 
-    // Retornar informações da sala sem a senha
+
     const roomInfo = {
       id: room.id,
       name: room.name,
