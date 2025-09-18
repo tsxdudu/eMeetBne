@@ -174,9 +174,9 @@ export function CustomVideoLayout() {
     if (isFullscreen) {
       return (
         <div className="fixed inset-0 z-50 bg-gray-900 flex flex-col transition-all duration-300 w-screen h-screen">
-          <div className="flex-1 flex items-center justify-center p-2">
+          <div className="flex-1 flex items-center justify-center">
             {screenShareTracks[selectedScreenShare] && (
-                <div className="relative max-w-[98vw] max-h-[96vh] w-auto h-auto cursor-pointer flex items-center justify-center">
+                <div className="relative w-screen h-screen cursor-pointer flex items-center justify-center">
                 {screenShareTracks[selectedScreenShare].publication && (
                   <VideoTrack 
                     trackRef={{
@@ -184,7 +184,7 @@ export function CustomVideoLayout() {
                       source: screenShareTracks[selectedScreenShare].source,
                       publication: screenShareTracks[selectedScreenShare].publication
                     }}
-                    className="max-w-full max-h-full object-contain transition-all duration-300 livekit-video-fullscreen block"
+                    className="w-full h-full object-contain transition-all duration-300 livekit-video-fullscreen block"
                     onClick={toggleFullscreen}
                     style={{
                       imageRendering: 'crisp-edges'
@@ -195,18 +195,18 @@ export function CustomVideoLayout() {
                         if (video) {
                           video.setAttribute('playsinline', 'true');
                           video.setAttribute('webkit-playsinline', 'true');
-                            video.style.objectFit = 'contain';
-                            video.style.width = 'auto';
-                            video.style.height = 'auto';
-                            video.style.maxWidth = '100vw';
-                            video.style.maxHeight = '100vh';
-                            video.style.willChange = 'auto';
+                          video.style.objectFit = 'contain';
+                          video.style.width = '100vw';
+                          video.style.height = '100vh';
+                          video.style.maxWidth = '100vw';
+                          video.style.maxHeight = '100vh';
+                          video.style.willChange = 'auto';
                         }
                       }
                     })}
                   />
                 )}
-                <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
+                <div className="absolute bottom-4 left-4 bg-black/50 text-white px-4 py-2 rounded-lg text-sm">
                   {screenShareTracks[selectedScreenShare].participant.name || screenShareTracks[selectedScreenShare].participant.identity} está compartilhando - Clique ou pressione ESC para sair do modo tela cheia
                 </div>
                 <button
@@ -300,7 +300,7 @@ export function CustomVideoLayout() {
                     })}
                   />
                 )}
-                <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
+                <div className="absolute bottom-4 left-4 bg-black/50 text-white px-4 py-2 rounded-lg text-sm">
                   {track.participant.name || track.participant.identity} está compartilhando - Clique para tela cheia
                 </div>
                 <button
